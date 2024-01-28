@@ -1,9 +1,12 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: away-from-keyboard
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      name: away-from-keyboard
   template:
     metadata:
       labels:
@@ -11,8 +14,8 @@ spec:
     spec:
       containers:
       - name: away-from-keyboard-api
-        imagePullPolicy: Always
-        image: pyama/away-from-keyboard:0.0.1
+        imagePullPolicy: Never
+        image: slack-afk:latest
         tty: true
         args: ["unicorn", "-c", "config/unicorn.rb", "-p", "8080"]
         securityContext:
@@ -44,10 +47,15 @@ spec:
               secretKeyRef:
                 name: away-from-keyboard-secret
                 key: slack-api-token
+          - name: SLACK_SIGNING_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: away-from-keyboard-secret
+                key: slack-signing-secret
       - name: away-from-keyboard-bot
         args: ["ruby", "bot.rb"]
-        image: pyama/away-from-keyboard:0.0.1
-        imagePullPolicy: Always
+        image: slack-afk:latest
+        imagePullPolicy: Never
         tty: true
         securityContext:
           readOnlyRootFilesystem: true
@@ -76,6 +84,11 @@ spec:
               secretKeyRef:
                 name: away-from-keyboard-secret
                 key: slack-api-token
+          - name: SLACK_SIGNING_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: away-from-keyboard-secret
+                key: slack-signing-secret
       - name: redis
         image: redis
         tty: true
